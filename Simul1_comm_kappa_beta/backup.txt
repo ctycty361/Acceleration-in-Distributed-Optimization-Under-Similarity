@@ -1,0 +1,56 @@
+clear all;
+rng(10032021,'v4');
+
+global I d n lambda Q b x_opt f_opt mu_reg L_reg beta
+%%%% Problem parameters %%%%
+I = 10;         % number of nodes
+d = 100;
+n = 150000;   % 150000
+lambda = 100;
+ToI = 2000;
+
+%%%% Problem data generation %%%%
+% [x_opt, f_opt, Q, b, beta, mu_reg, L_reg] = data_generator(mu, L);
+[x_opt, f_opt, Q, b, beta, mu_reg, L_reg] = data_generator_omega(0.99999);
+fprintf('global cn is %f,   similarity cn is %f\n', L_reg/mu_reg, beta/mu_reg);
+W = undirected_graph_generator(I, 0.75);
+% W = ones(I, 1) * ones(1, I) / I;
+x_init = randn(d, I);
+Grad = zeros(d, I);
+for i = 1:I
+    Grad(:, i) = grad(i, x_init(:, i), 0, zeros(d, 1));
+end
+
+%% algorithms
+% alpha = sqrt(mu_reg / beta);
+% c = 0.9;
+% temp = (2+sqrt(1+(beta - mu_reg)*beta/(8*(L_reg+2*beta-mu_reg)^2) * (1.5*(1-c*alpha)^2+5-4*c*alpha) / (1-c*alpha)^2))^2;
+% inner_T = ceil(34 * log(2/(1-c*alpha) + 576*(beta - mu_reg)^2/(mu_reg*beta*(1-c*alpha)^2) ...
+%     * temp /(sqrt(1-c*alpha) - sqrt(1-alpha))^2 ));
+inner_T = ceil(log(beta/mu_reg));
+[Acc_F_x, Acc_F_res] = Acc_NEXT_F(W, x_init, ToI, inner_T);
+disp(['Acc-F Err: ', num2str(Acc_F_res(end))]);
+
+[NEXT_F_x, ~, NEXT_F_res] = NEXT_F(beta, x_init, [], [], Grad, W, ToI, false);
+disp(['NEXT-F Err: ', num2str(NEXT_F_res(end))]);
+
+[NEXT_L_x, NEXT_L_res] = NEXT_L(x_init, Grad, W, ToI);
+disp(['NEXT-L Err: ', num2str(NEXT_L_res(end))]);
+
+[Acc_L_x, Acc_L_res] = Acc_NEXT_L(x_init, Grad, W, ToI);
+disp(['Acc-L Err: ', num2str(Acc_L_res(end))]);
+
+%% plot
+iterations = 1 : (ToI+1);
+acc_iters = 1 : inner_T : (ToI+1);
+figure
+fz = 16;
+fmean = semilogy(iterations, NEXT_F_res, iterations, NEXT_L_res, ...
+    acc_iters, Acc_F_res, iterations, Acc_L_res);
+hold on
+set(fmean, 'linewidth', 2);
+legend({'SONATA', 'SONATA-L', 'Acc-SONATA', 'Acc-SONATA-L'}, 'FontSize', fz)
+xlabel({'communication cost'}, 'FontSize', fz)
+ylabel({'optimality gap'}, 'FontSize', fz)
+% ylim([1e-10 inf])
+xlim([0, ToI])
