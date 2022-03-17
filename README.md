@@ -1,4 +1,5 @@
 # Acceleration-in-Distributed-Optimization-Under-Similarity
+The codes are for simulations in the paper arXiv:2110.12347.
 
 Simulation 1 (Synthetic data): The code "./Simul1_err_comm/main.m" corresponds to the left panel of Figure 1 (in that paper). Under the folder "./Simul1_comm_kappa_beta/", "main.m" generates results, and "result_figures.m" correspond to mid and right panel of Figure 1.
 
